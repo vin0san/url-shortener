@@ -1,6 +1,6 @@
--- schema.sql
 
 CREATE DATABASE url_production;
+
 
 DROP TABLE IF EXISTS clicks_analytics CASCADE;
 DROP TABLE IF EXISTS urls CASCADE;

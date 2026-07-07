@@ -1,36 +1,59 @@
--- queries.sql
--- url redirection service database seed data
-
-SELECT long_url
+-- 1. Core Redirection Engine Lookup
+-- Fetches metadata so the backend application can safely handle 404 vs 410 logic.
+SELECT 
+    long_url, 
+    expires_at
 FROM urls
-WHERE short_key = 'git-trend'
-    AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP);
+WHERE short_key = 'git-trend';
 
--- Country metrics for URL with short_key 'git-trend'
 
-SELECT country_code, COUNT(*) AS click_count
+-- 2. Geographical Metrics Breakdown
+-- Groups and counts clicks per country for a specific target URL ID.
+SELECT 
+    country_code, 
+    COUNT(*) AS click_count
 FROM clicks_analytics
-WHERE url_id = (SELECT id FROM urls WHERE short_key = 'git-trend')
+WHERE url_id = 1
 GROUP BY country_code
 ORDER BY click_count DESC;
 
--- Referrer metrics for URL with short_key 'git-trend'
 
-SELECT referrer, COUNT(*) AS click_count
+-- 3. Traffic Source Referer Metrics
+-- Groups and counts incoming domain sources (Fixed column name to 'referer' to match schema).
+SELECT 
+    referer, 
+    COUNT(*) AS click_count
 FROM clicks_analytics
-WHERE url_id = (SELECT id FROM urls WHERE short_key = 'git-trend')
-GROUP BY referrer
+WHERE url_id = 1
+GROUP BY referer
 ORDER BY click_count DESC;
 
--- Time series metrics for URL with short_key 'git-trend'
 
-SELECT DATE_TRUNC('hour', clicked_at) AS click_hour, COUNT(*) AS click_count
+-- 4. Time Series Metric Timeline (Hourly Graphing)
+-- Buckets click volumes into clean hourly increments over the trailing 24 hours.
+SELECT 
+    DATE_TRUNC('hour', clicked_at) AS click_hour, 
+    COUNT(*) AS click_count
 FROM clicks_analytics
-WHERE url_id = (SELECT id FROM urls WHERE short_key = 'git-trend')
+WHERE url_id = 1 
+  AND clicked_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
 GROUP BY click_hour
 ORDER BY click_hour ASC;
 
--- Background job to clean up expired URLs (to be scheduled as a cron job)
 
-DELETE FROM urls
-WHERE expires_at IS NOT NULL AND expires_at < CURRENT_TIMESTAMP;
+-- 5. Deep-Dive Historical Campaign Performance Report
+-- Joins schema tables to compile overall status metrics for a dashboard.
+SELECT 
+    u.long_url,
+    u.created_at,
+    u.expires_at,
+    CASE 
+        WHEN u.expires_at < CURRENT_TIMESTAMP THEN 'Expired' 
+        ELSE 'Active' 
+    END AS status,
+    COUNT(c.id) AS total_clicks,
+    COUNT(DISTINCT c.country_code) AS unique_countries
+FROM urls u
+LEFT JOIN clicks_analytics c ON u.id = c.url_id
+WHERE u.id = 1
+GROUP BY u.id, u.long_url, u.created_at, u.expires_at;
