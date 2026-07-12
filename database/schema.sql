@@ -1,4 +1,4 @@
-CREATE DATABASE url_production;
+-- CREATE DATABASE url_production;
 
 
 DROP TABLE IF EXISTS clicks_analytics CASCADE;

@@ -21,6 +21,11 @@ nano-url-engine/
 │   ├── schema.sql
 │   ├── seeds.sql
 │   └── queries.sql
+├── tests/
+|   ├── conftest.py          
+|   ├── test_shorten.py       
+|   ├── test_health.py
+|   └── test_utils.py          
 ├── .env               
 └── .gitignore
 ```

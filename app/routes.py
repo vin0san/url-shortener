@@ -46,7 +46,7 @@ def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
             db.rollback()
             if is_custom:
                 raise HTTPException(status.HTTP_409_CONFLICT, "Key taken by a concurrent request.")
-            key = generate_short_key()  # try a fresh random key
+            key = generate_short_key()
     else:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not allocate a unique key.")
 
