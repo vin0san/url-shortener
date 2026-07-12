@@ -6,6 +6,26 @@ The goal of this project is to learn backend system design by implementing featu
 
 ---
 
+## Project Structure
+
+```bash
+nano-url-engine/  
+├── app/
+│   ├── __init__.py
+│   ├── main.py        
+│   ├── config.py      
+│   ├── database.py    
+│   └── models.py
+│   └── utils.py      
+├── database/
+│   ├── schema.sql
+│   ├── seeds.sql
+│   └── queries.sql
+├── .env               
+└── .gitignore
+```
+
+
 ## Planned Features
 
 - Create short URLs

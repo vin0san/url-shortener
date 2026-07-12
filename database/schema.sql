@@ -1,4 +1,3 @@
-
 CREATE DATABASE url_production;
 
 
