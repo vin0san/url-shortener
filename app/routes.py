@@ -50,4 +50,10 @@ def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
     else:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not allocate a unique key.")
 
-    return ResponseShorten(...)
+    return ResponseShorten(
+        short_url=f"{settings.BASE_URL.rstrip('/')}/{db_url.short_key}",
+        custom_key=db_url.short_key,
+        long_url=db_url.long_url,
+        created_at=db_url.created_at,
+        expires_at=db_url.expires_at,
+    )
