@@ -5,7 +5,6 @@ from app.database import get_db
 from app.routes import router
 
 app = FastAPI(title="Url Shortener", version="1.0")
-app.include_router(router)
 
 @app.get("/")
 def root():
@@ -21,3 +20,5 @@ def health(db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database connection failed: {str(e)}"
         )
+
+app.include_router(router)

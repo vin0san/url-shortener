@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from fastapi.responses import RedirectResponse
+from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
 from app.models import Url
@@ -10,20 +12,21 @@ from app.config import settings
 
 router = APIRouter()
 
-RESERVED_KEYS = {"admin", "api", "health", "shorten", "docs", "openapi.json"}
 MAX_KEY_GEN_ATTEMPTS = 5
 
+RESERVED_KEYS = {"admin", "api", "health", "shorten", "docs", "openapi.json", "redoc"}
 
 def _resolve_short_key(payload: RequestShorten, db: Session) -> str:
     if payload.custom_key:
-        if payload.custom_key.lower() in RESERVED_KEYS:
+        clean_key = payload.custom_key.lower()
+        if clean_key in RESERVED_KEYS:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "This key is reserved.")
-        existing = db.query(Url).filter(Url.short_key == payload.custom_key).first()
+        existing = db.query(Url).filter(Url.short_key == clean_key).first()
         if existing:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "This custom key is already taken.")
-        return payload.custom_key
+        return clean_key
 
-    return generate_short_key()
+    return generate_short_key().lower()
 
 @router.post("/shorten", response_model=ResponseShorten)
 def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
@@ -46,7 +49,7 @@ def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
             db.rollback()
             if is_custom:
                 raise HTTPException(status.HTTP_409_CONFLICT, "Key taken by a concurrent request.")
-            key = generate_short_key()
+            key = generate_short_key().lower()
     else:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not allocate a unique key.")
 
@@ -57,3 +60,22 @@ def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
         created_at=db_url.created_at,
         expires_at=db_url.expires_at,
     )
+@router.get("/{short_key}")
+def redirect_short_url(short_key: str, db: Session = Depends(get_db)):
+    clean_key = short_key.lower()
+
+    url = db.query(Url.long_url, Url.expires_at).filter(Url.short_key == clean_key).first()
+
+    if not url:  
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No such url exists"
+        )
+
+    if url.expires_at and datetime.now(timezone.utc) >= url.expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="The Url has expired"
+        )
+
+    return RedirectResponse(url=url.long_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
