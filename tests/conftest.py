@@ -34,7 +34,14 @@ def clean_tables():
         conn.execute(Base.metadata.tables["users"].delete())
     yield
 
+@pytest.fixture
+def db():
+    db = TestingSession()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    return TestClient(app, follow_redirects=False)
