@@ -79,16 +79,19 @@ def redirect_short_url(short_key: str, request: Request, db: Session = Depends(g
             status_code=status.HTTP_410_GONE,
             detail="The Url has expired"
         )
+    
+    user_agent_string = request.headers.get("user-agent", "Unknown")
+    referrer_string = request.headers.get("referer", None)    
     click = ClicksAnalytics(
-        url_id = url.id,
-        clicked_at = datetime.now(timezone.utc),
-        user_agent = request.headers.get("user-agent", None),
-        country_code = None,
-        referrer = request.headers.get('referer', None)
+        url_id=url.id,
+        user_agent=user_agent_string[:511],
+        country_code="XX",                 
+        referrer=referrer_string[:2048] if referrer_string else None
     )
     try:
         db.add(click)
         db.commit()
-    except SQLAlchemyError:
+    except Exception as e:
         db.rollback()
+        print(f"Analytics logging failed silently: {e}")
     return RedirectResponse(url=url.long_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
