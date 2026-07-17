@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi.responses import RedirectResponse
 from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
-from app.models import Url
+from app.models import Url, ClicksAnalytics
 from app.utils import generate_short_key, calculate_expiration
 from app.schemas import RequestShorten, ResponseShorten
 from app.config import settings
@@ -60,11 +60,13 @@ def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
         created_at=db_url.created_at,
         expires_at=db_url.expires_at,
     )
+
+
 @router.get("/{short_key}")
-def redirect_short_url(short_key: str, db: Session = Depends(get_db)):
+def redirect_short_url(short_key: str, request: Request, db: Session = Depends(get_db)):
     clean_key = short_key.lower()
 
-    url = db.query(Url.long_url, Url.expires_at).filter(Url.short_key == clean_key).first()
+    url = db.query(Url.long_url, Url.expires_at, Url.id).filter(Url.short_key == clean_key).first()
 
     if not url:  
         raise HTTPException(
@@ -77,5 +79,16 @@ def redirect_short_url(short_key: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_410_GONE,
             detail="The Url has expired"
         )
-
+    click = ClicksAnalytics(
+        url_id = url.id,
+        clicked_at = datetime.now(timezone.utc),
+        user_agent = request.headers.get("user-agent", None),
+        country_code = None,
+        referrer = request.headers.get('referer', None)
+    )
+    try:
+        db.add(click)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
     return RedirectResponse(url=url.long_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)

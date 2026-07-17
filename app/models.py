@@ -42,8 +42,8 @@ class ClicksAnalytics(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     clicked_at = Column(DateTime(timezone=True), server_default=func.now())
-    user_agent = Column(String, nullable=False)
-    country_code = Column(CHAR(2), nullable=False)
+    user_agent = Column(String, nullable=True)
+    country_code = Column(CHAR(2), nullable=True)
     referrer = Column(String)
     
     url_id = Column(BigInteger, ForeignKey("urls.id", ondelete="CASCADE"))

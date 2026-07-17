@@ -27,8 +27,8 @@ CREATE TABLE clicks_analytics(
     id BIGSERIAL PRIMARY KEY,
     url_id BIGINT REFERENCES urls(id) ON DELETE CASCADE,
     clicked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    user_agent VARCHAR(511) NOT NULL,
-    country_code CHAR(2) NOT NULL,
+    user_agent VARCHAR(511) NULL DEFAULT NULL,
+    country_code CHAR(2) NULL DEFAULT NULL,
     referrer VARCHAR(2048)
 );
 

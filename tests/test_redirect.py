@@ -1,4 +1,4 @@
-from app.models import Url
+from app.models import Url, ClicksAnalytics
 from datetime import timedelta, datetime, timezone
 
 def test_redirect_nonexistent_key_returns_404(client):
@@ -28,3 +28,20 @@ def test_redirect_active_link_returns_307(client, db):
     db.refresh(url)
     response = client.get("/abc456")
     assert response.status_code == 307
+
+def test_redirect_active_link_logs_click(client, db):
+    url = Url(
+        long_url="https://example.com",
+        short_key="abc678",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=10)
+    )
+    db.add(url)
+    db.commit()
+    db.refresh(url)
+
+    response = client.get("/abc678")
+    assert response.status_code == 307
+
+    click = db.query(ClicksAnalytics).filter(ClicksAnalytics.url_id == url.id).first()
+    assert click is not None
+    assert click.user_agent is not None
