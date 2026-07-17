@@ -91,7 +91,6 @@ def redirect_short_url(short_key: str, request: Request, db: Session = Depends(g
     try:
         db.add(click)
         db.commit()
-    except Exception as e:
+    except SQLAlchemyError:
         db.rollback()
-        print(f"Analytics logging failed silently: {e}")
     return RedirectResponse(url=url.long_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
