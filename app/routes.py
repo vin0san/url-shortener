@@ -5,10 +5,11 @@ from fastapi.responses import RedirectResponse
 from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
-from app.models import Url, ClicksAnalytics
+from app.models import Url, ClicksAnalytics, User
 from app.utils import generate_short_key, calculate_expiration
 from app.schemas import RequestShorten, ResponseShorten
 from app.config import settings
+from app.auth import get_optional_user
 
 router = APIRouter()
 
@@ -29,7 +30,11 @@ def _resolve_short_key(payload: RequestShorten, db: Session) -> str:
     return generate_short_key().lower()
 
 @router.post("/shorten", response_model=ResponseShorten)
-def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
+def shorten_url(
+    payload: RequestShorten,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
     is_custom = bool(payload.custom_key)
     key = _resolve_short_key(payload, db)
 
@@ -39,6 +44,7 @@ def shorten_url(payload: RequestShorten, db: Session = Depends(get_db)):
             long_url=str(payload.long_url),
             short_key=key,
             expires_at=calculate_expiration(payload.expiration_days),
+            user_id=current_user.id if current_user else None
         )
         try:
             db.add(db_url)

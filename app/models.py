@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger, DateTime, CHAR, ForeignKey
+from sqlalchemy import Column, String, BigInteger, DateTime, CHAR, ForeignKey, VARCHAR
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -8,7 +8,7 @@ class User(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     email = Column(String, unique=True, nullable=False)
-    pass_hash = Column(CHAR(60), nullable=False)
+    pass_hash = Column(VARCHAR(255), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
