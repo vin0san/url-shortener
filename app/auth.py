@@ -55,3 +55,12 @@ def get_optional_user(token: str | None = Depends(oauth2_scheme), db: Session = 
     user =  db.query(User).filter(User.email == username).first()
     return user
 
+def get_current_user(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="unauthorized access")
+    
+    username = decode_token(token)
+    user = db.query(User).filter(User.email == username).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    return user

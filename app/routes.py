@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi.responses import RedirectResponse
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from app.database import get_db
 from app.models import Url, ClicksAnalytics, User
 from app.utils import generate_short_key, calculate_expiration
-from app.schemas import RequestShorten, ResponseShorten
+from app.schemas import RequestShorten, ResponseShorten, UrlListResponse
 from app.config import settings
-from app.auth import get_optional_user
+from app.auth import get_optional_user, get_current_user
 
 router = APIRouter()
 
@@ -100,3 +100,14 @@ def redirect_short_url(short_key: str, request: Request, db: Session = Depends(g
     except SQLAlchemyError:
         db.rollback()
     return RedirectResponse(url=url.long_url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+@router.get("/user/urls", response_model=list[UrlListResponse])
+def get_user_urls(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    urls = db.query(Url).filter(Url.user_id == current_user.id).all()
+    return [UrlListResponse(
+        url_id=url.id,
+        long_url=url.long_url,
+        short_key=url.short_key,
+        created_at=url.created_at,
+        expires_at=url.expires_at
+    ) for url in urls]

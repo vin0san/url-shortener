@@ -39,3 +39,10 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class UrlListResponse(BaseModel):
+    url_id: int
+    long_url: str
+    short_key: str
+    created_at: datetime
+    expires_at: datetime | None
