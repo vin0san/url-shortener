@@ -21,7 +21,6 @@ def test_get_user_urls_returns_only_own_urls(client, db):
     })
     token1 = login_response.json()["access_token"]
 
-    # user 1 creates a url
     payload = {"long_url": "https://example.com", "custom_key": "dup-key"}
     client.post("/shorten", json=payload, headers={"Authorization": f"Bearer {token1}"})
 
@@ -38,14 +37,12 @@ def test_get_user_urls_returns_only_own_urls(client, db):
     })
     token2 = login_response2.json()["access_token"]
 
-    # user 2 creates a DIFFERENT url
     payload = {"long_url": "https://example-jose.com", "custom_key": "jose-key"}
     client.post("/shorten", json=payload, headers={"Authorization": f"Bearer {token2}"})
 
-    # user 1 fetches their list
     response = client.get("/user/urls", headers={"Authorization": f"Bearer {token1}"})
     assert response.status_code == 200
     body = response.json()
 
     assert len(body) == 1
-    assert body[0]["short_key"] == "dup-key"  # the key user 1 created, not user 2's
+    assert body[0]["short_key"] == "dup-key"
