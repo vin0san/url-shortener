@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.sql import func
 from fastapi.responses import RedirectResponse
 from datetime import datetime, timezone
 
 from app.database import get_db
 from app.models import Url, ClicksAnalytics, User
 from app.utils import generate_short_key, calculate_expiration
-from app.schemas import RequestShorten, ResponseShorten, UrlListResponse
+from app.schemas import RequestShorten, ResponseShorten, UrlListResponse, UrlAnalyticsResponse, DailyClickCount
 from app.config import settings
 from app.auth import get_optional_user, get_current_user
 
@@ -111,3 +112,30 @@ def get_user_urls(current_user: User = Depends(get_current_user), db: Session = 
         created_at=url.created_at,
         expires_at=url.expires_at
     ) for url in urls]
+
+@router.get("/urls/{url_id}/analytics", response_model=UrlAnalyticsResponse)
+def get_url_analytics(url_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    valid_req = db.query(Url).filter(Url.id == url_id, Url.user_id == current_user.id).first()
+
+    if valid_req is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    
+    total_clicks = db.query(ClicksAnalytics).filter(ClicksAnalytics.url_id == url_id).count()
+
+    daily_counts = (
+        db.query(
+            func.date(ClicksAnalytics.clicked_at).label("day"),
+            func.count().label("count")
+        )
+        .filter(ClicksAnalytics.url_id == url_id)
+        .group_by(func.date(ClicksAnalytics.clicked_at))
+        .all()
+    )
+    return UrlAnalyticsResponse(
+        url_id=url_id,
+        short_key=valid_req.short_key,
+        total_clicks=total_clicks,
+        daily_breakdown=[
+            DailyClickCount(date=row.day, count=row.count) for row in daily_counts
+        ]
+    )

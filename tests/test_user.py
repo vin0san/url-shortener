@@ -1,5 +1,5 @@
 from app.auth import hash_password
-from app.models import User
+from app.models import User, Url
 
 def test_get_user_urls_returns_401_without_auth(client):
     response = client.get("/user/urls")
@@ -46,3 +46,30 @@ def test_get_user_urls_returns_only_own_urls(client, db):
 
     assert len(body) == 1
     assert body[0]["short_key"] == "dup-key"
+
+def test_get_url_analytics_returns_correct_data(client, db):
+    user = User(
+        email="jose@yahoo.com",
+        pass_hash = hash_password("jose-the-great")
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    login_response = client.post("/auth/login", json={
+        "email": "jose@yahoo.com",
+        "password": "jose-the-great"
+    })
+    token = login_response.json()["access_token"]
+
+    payload = {"long_url": "https://example.com", "custom_key": "dup-key"}
+    client.post("/shorten", json=payload, headers={"Authorization": f"Bearer {token}"})
+    client.get("/dup-key")
+    client.get("/dup-key")
+    client.get("/dup-key")
+    query = db.query(Url.short_key, Url.id).filter(Url.short_key == "dup-key").first()
+    response = client.get(f"/urls/{query.id}/analytics", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_clicks"] == 3
+    assert len(body["daily_breakdown"]) == 1
+    assert body["daily_breakdown"][0]["count"] == 3

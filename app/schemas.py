@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from pydantic import BaseModel, HttpUrl, Field, StringConstraints, EmailStr
 from typing import Annotated
 
@@ -46,3 +46,13 @@ class UrlListResponse(BaseModel):
     short_key: str
     created_at: datetime
     expires_at: datetime | None
+
+class DailyClickCount(BaseModel):
+    date: date
+    count: int
+
+class UrlAnalyticsResponse(BaseModel):
+    url_id: int
+    short_key: str
+    total_clicks: int
+    daily_breakdown: list[DailyClickCount]
