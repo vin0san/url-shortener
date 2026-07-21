@@ -68,26 +68,38 @@ nano-url-engine/
 
 ## Setup
 
-**Prerequisites:** Python 3.12, PostgreSQL.
+**Prerequisites:** Python 3.12+, Docker (or local PostgreSQL 16+).
+
+## Setup
+
+**Prerequisites:** Python 3.12+, PostgreSQL 16+ (or Docker).
+
+### Option A — Docker (recommended, no local Postgres needed)
 
 ```bash
-# clone and install
 git clone https://github.com/vin0san/nano-url-engine
 cd nano-url-engine
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+cp .env.example .env
+# fill in SECRET_KEY, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB in .env
 
-# create the database
+docker compose up --build
+```
+
+App runs at `http://localhost:8000`, docs at `/docs`. Postgres schema initializes automatically on first run.
+
+### Option B — Local Python + Postgres
+
+```bash
+git clone https://github.com/vin0san/nano-url-engine
+cd nano-url-engine
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# fill in DATABASE_URL, SECRET_KEY in .env
+
 psql -U postgres -c "CREATE DATABASE url_production;"
 psql -U postgres -d url_production -f database/schema.sql
 
-# environment variables — create a .env file
-DATABASE_URL=postgresql://postgres:<password>@localhost:5432/url_production
-BASE_URL=http://localhost:8000
-SECRET_KEY=<generate with: openssl rand -hex 32>
-
-# run
 uvicorn app.main:app --reload
 ```
 
