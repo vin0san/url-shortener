@@ -1,6 +1,8 @@
 # nano-url-engine
 
-A backend URL shortener built to demonstrate core backend engineering fundamentals — REST API design, relational schema design, authentication, and test-driven development. Not a production-scale service.
+A backend-focused URL shortener built to practice engineering decisions rather than maximize the number of technologies used.
+
+The project implements URL shortening, authentication, ownership, click analytics, and a tested REST API while documenting the tradeoffs behind key design decisions.
 
 ## Tech Stack
 
@@ -13,6 +15,19 @@ A backend URL shortener built to demonstrate core backend engineering fundamenta
 - **pytest** — test suite (30 tests)
 
 **Redis** isn't used — see [Design Decisions](#design-decisions).
+
+## Architecture
+```
+                Client
+                   │
+            HTTP / JSON
+                   │
+             FastAPI Routes
+                   │
+        SQLAlchemy ORM
+                   │
+             PostgreSQL
+```
 
 ## Project Structure
 
@@ -139,8 +154,11 @@ pytest tests/ -v
 
 **Login takes JSON, not an OAuth2 form.** FastAPI's `/docs` "Authorize" button expects the OAuth2 password-grant form convention, so it doesn't work here out of the box, this was a deliberate trade for staying consistent with the rest of the API, which is all JSON. Test tokens get passed manually via an `Authorization: Bearer` header instead.
 
-## Not Yet Built
+## Future Work
 
+- Redis cache-aside for redirect optimization
 - Rate limiting
-- Refresh tokens (currently a single expiring access token)
-- GeoIP-based `country_code` population
+- Refresh token support
+- GeoIP lookup
+- CI/CD pipeline
+- Structured logging
