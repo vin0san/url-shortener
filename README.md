@@ -4,6 +4,13 @@ A backend-focused URL shortener built to practice engineering decisions rather t
 
 The project implements URL shortening, authentication, ownership, click analytics, and a tested REST API while documenting the tradeoffs behind key design decisions.
 
+## Live Demo
+
+API: https://url-shortener-12e5.onrender.com
+
+Swagger UI:
+https://url-shortener-12e5.onrender.com/docs
+
 ## Tech Stack
 
 - **FastAPI** — REST API framework
